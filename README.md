@@ -26,13 +26,13 @@ if err != nil {
     log.Fatal(err)
 }
 
-#post请求 默认使用urlencoded编码
+#post请求默认使用urlencoded编码
 res, err := request.Post("www.ropon.top", map[string]string{"key":val})
 if err != nil {
     log.Fatal(err)
 }
 
-#post 传入json请求
+#post传入json请求
 jsonStr := `{"key": val}`
 res, err := request.Post("www.ropon.top", nil, jsonStr)
 if err != nil {
