@@ -1,9 +1,9 @@
 #requests
 
+```go
 #下载
 go get -v github.com/Ropon/requests
 
-```go
 #初始化请求
 request = requests.Requests()
 
