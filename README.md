@@ -39,11 +39,12 @@ if err != nil {
     log.Fatal(err)
 }
 
-#返回对象公共参数
-#默认是utf-8 若网页编码是gbk 使用
+#默认是utf-8若网页编码是gbk使用
 res.Encoding("gbk")
+
 #获取文本信息
 res.Text()
+
 #获取Json
 res.Json()
 ```
