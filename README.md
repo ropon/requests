@@ -1,5 +1,4 @@
-# requests
-
+```go
 #初始化请求
 request = requests.Requests()
 
@@ -64,4 +63,5 @@ res.Encoding("gbk")
 res.Text()
 #获取Json
 res.Json()
+```
 
