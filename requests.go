@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+//自定义UA
+var ua = "Go-http-Ropon/1.2"
+
 //请求相关
 type Request struct {
 	client  *http.Client
@@ -50,6 +53,8 @@ func convertUrl(data ...map[string]string) url.Values {
 
 //请求头
 func (req *Request) Header() {
+	req.httpReq.Header.Add("User-Agent", ua)
+	req.httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	for k, v := range req.Headers {
 		req.httpReq.Header.Add(k, v)
 	}
@@ -95,9 +100,7 @@ func (req *Request) Post(urlStr string, data map[string]string, options ...strin
 	req.Header()
 	req.Cookie()
 	if len(options) > 0 {
-		req.httpReq.Header.Add("Content-Type", "application/json")
-	} else {
-		req.httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		req.httpReq.Header.Set("Content-Type", "application/json")
 	}
 	resp = &Response{}
 	res, err := req.client.Do(rep)
