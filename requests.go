@@ -1,8 +1,10 @@
 package requests
 
 import (
-	"encoding/json"
+	"compress/gzip"
+	"compress/zlib"
 	"github.com/axgle/mahonia"
+	jsoniter "github.com/json-iterator/go"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -34,13 +36,18 @@ type Response struct {
 //构造方法
 func Requests() *Request {
 	req := new(Request)
-	req.client = &http.Client{}
+	//是否忽略证书校验
+	req.client = &http.Client{
+		//Transport: &http.Transport{
+		//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		//},
+	}
 	jar, _ := cookiejar.New(nil)
 	req.client.Jar = jar
 	return req
 }
 
-//转urlEncode
+//转urlencoded编码
 func convertUrl(data ...map[string]string) url.Values {
 	urls := url.Values{}
 	for _, d := range data {
@@ -54,6 +61,7 @@ func convertUrl(data ...map[string]string) url.Values {
 //请求头
 func (req *Request) Header() {
 	req.httpReq.Header.Add("User-Agent", ua)
+	//默认urlencoded编码
 	req.httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	for k, v := range req.Headers {
 		req.httpReq.Header.Add(k, v)
@@ -108,21 +116,9 @@ func (req *Request) Post(urlStr string, data map[string]string, options ...strin
 	return resp, err
 }
 
+//配置编码 默认utf8
 func (res *Response) Encoding(encoding string) {
 	res.encoding = encoding
-}
-
-//返回文本信息
-func (res *Response) Text() (text string) {
-	body, _ := ioutil.ReadAll(res.res.Body)
-	if res.encoding == "gbk" {
-		dec := mahonia.NewDecoder("gbk")
-		text = dec.ConvertString(string(body))
-	} else {
-		text = string(body)
-	}
-	res.text = text
-	return
 }
 
 func (res *Response) Body() (body io.Reader) {
@@ -136,22 +132,49 @@ func (res *Response) Body() (body io.Reader) {
 }
 
 func (res *Response) Content() (content []byte) {
-	var rd io.Reader
+	if res.content != nil {
+		return res.content
+	}
+	var reader io.Reader
+	//判断压缩编码
+	switch res.res.Header.Get("Content-Encoding") {
+	case "gzip":
+		reader, _ = gzip.NewReader(res.res.Body)
+	case "deflate":
+		reader, _ = zlib.NewReader(res.res.Body)
+	default:
+		reader = res.res.Body
+	}
 	if res.encoding == "gbk" {
 		dec := mahonia.NewDecoder("gbk")
-		rd = dec.NewReader(res.res.Body)
-	} else {
-		rd = res.res.Body
+		reader = dec.NewReader(res.res.Body)
 	}
-	content, _ = ioutil.ReadAll(rd)
+	content, _ = ioutil.ReadAll(reader)
 	res.content = content
 	return
 }
 
-//返回json数据
-func (res *Response) Json(v interface{}) error {
+//返回文本信息
+func (res *Response) Text() (text string) {
+	text = string(res.Content())
+	res.text = text
+	return
+}
+
+//返回jsoniter.Any 通过Get()进一步获取值
+func (res *Response) Json() jsoniter.Any {
 	if res.content == nil {
 		res.Content()
 	}
-	return json.Unmarshal(res.content, v)
+	return jsoniter.Get(res.content)
+}
+
+//响应头信息
+func (res *Response) Header() map[string][]string {
+	return res.res.Header
+}
+
+//响应状态码
+func (res *Response) Status() int {
+	return res.res.StatusCode
 }
