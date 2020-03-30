@@ -5,7 +5,8 @@ const UA = `这里填写自定义UA信息`
 var Req *Request
 
 func InitReq() {
-	Req = Requests()
+	//初始化传入参数代表是否校验证书
+	Req = Requests(false)
 	Req.Headers = map[string]string{
 		"User-Agent": UA,
 	}

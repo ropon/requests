@@ -3,6 +3,7 @@ package requests
 import (
 	"compress/gzip"
 	"compress/zlib"
+	"crypto/tls"
 	"github.com/axgle/mahonia"
 	jsoniter "github.com/json-iterator/go"
 	"io"
@@ -34,13 +35,17 @@ type Response struct {
 }
 
 //构造方法
-func Requests() *Request {
+func Requests(igTls bool) *Request {
 	req := new(Request)
-	//是否忽略证书校验
-	req.client = &http.Client{
-		//Transport: &http.Transport{
-		//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		//},
+	if igTls {
+		//忽略证书校验
+		req.client = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+	} else {
+		req.client = &http.Client{}
 	}
 	jar, _ := cookiejar.New(nil)
 	req.client.Jar = jar
