@@ -10,6 +10,11 @@ func InitReq() {
 	Req.Headers = map[string]string{
 		"User-Agent": UA,
 	}
+	Req.Cookies = map[string]string{
+
+	}
+	Req.Header()
+	Req.Cookie()
 }
 
 func Get(urlStr string, params map[string]string) (resp *Response, err error) {

@@ -12,6 +12,7 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"strings"
+	"sync"
 )
 
 //自定义UA
@@ -24,6 +25,7 @@ type Request struct {
 	Headers map[string]string
 	Cookies map[string]string
 	Params  url.Values
+	mutex   *sync.RWMutex
 }
 
 //响应相关
@@ -47,8 +49,15 @@ func Requests(igTls bool) *Request {
 	} else {
 		req.client = &http.Client{}
 	}
+	req.httpReq = &http.Request{
+		Header: make(http.Header),
+	}
+	req.httpReq.Header.Add("User-Agent", ua)
+	//默认urlencoded编码
+	req.httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	jar, _ := cookiejar.New(nil)
 	req.client.Jar = jar
+	req.mutex = new(sync.RWMutex)
 	return req
 }
 
@@ -65,9 +74,8 @@ func convertUrl(data ...map[string]string) url.Values {
 
 //请求头
 func (req *Request) Header() {
-	req.httpReq.Header.Add("User-Agent", ua)
-	//默认urlencoded编码
-	req.httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.mutex.Lock()
+	defer req.mutex.Unlock()
 	for k, v := range req.Headers {
 		req.httpReq.Header.Add(k, v)
 	}
@@ -75,6 +83,8 @@ func (req *Request) Header() {
 
 //cookie管理
 func (req *Request) Cookie() {
+	req.mutex.Lock()
+	defer req.mutex.Unlock()
 	for k, v := range req.Cookies {
 		tmp := &http.Cookie{Name: k, Value: v}
 		req.httpReq.AddCookie(tmp)
@@ -92,9 +102,8 @@ func (req *Request) Get(urlStr string, params map[string]string) (resp *Response
 		sURL.RawQuery = convertUrl(params).Encode()
 		rep.URL = sURL
 	}
+	rep.Header = req.httpReq.Header
 	req.httpReq = rep
-	req.Header()
-	req.Cookie()
 	resp = &Response{}
 	res, err := req.client.Do(rep)
 	resp.res = res
@@ -109,9 +118,8 @@ func (req *Request) Post(urlStr string, data map[string]string, options ...strin
 		postData = options[0]
 	}
 	rep, _ := http.NewRequest("POST", urlStr, strings.NewReader(postData))
+	rep.Header = req.httpReq.Header
 	req.httpReq = rep
-	req.Header()
-	req.Cookie()
 	if len(options) > 0 {
 		req.httpReq.Header.Set("Content-Type", "application/json")
 	}
