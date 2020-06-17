@@ -77,11 +77,11 @@ func (req *Request) Header() {
 	req.mutex.Lock()
 	defer req.mutex.Unlock()
 	for k, v := range req.Headers {
-		req.httpReq.Header.Add(k, v)
+		req.httpReq.Header.Set(k, v)
 	}
 }
 
-//cookie管理
+//Cookie管理
 func (req *Request) Cookie() {
 	req.mutex.Lock()
 	defer req.mutex.Unlock()
@@ -110,14 +110,13 @@ func (req *Request) Get(urlStr string, params map[string]string) (resp *Response
 	return resp, err
 }
 
-//post方法
-func (req *Request) Post(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
+func (req *Request) BaseReq(Method, urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
 	postData := convertUrl(data).Encode()
 	//传入json数据
 	if len(options) > 0 {
 		postData = options[0]
 	}
-	rep, _ := http.NewRequest("POST", urlStr, strings.NewReader(postData))
+	rep, _ := http.NewRequest(Method, urlStr, strings.NewReader(postData))
 	rep.Header = req.httpReq.Header
 	req.httpReq = rep
 	if len(options) > 0 {
@@ -129,12 +128,28 @@ func (req *Request) Post(urlStr string, data map[string]string, options ...strin
 	return resp, err
 }
 
+//post方法
+func (req *Request) Post(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
+	return req.BaseReq("POST", urlStr, data, options...)
+}
+
+//put方法
+func (req *Request) Put(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
+	return req.BaseReq("PUT", urlStr, data, options...)
+}
+
+//delete方法
+func (req *Request) Delete(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
+	return req.BaseReq("DELETE", urlStr, data, options...)
+}
+
 //配置编码 默认utf8
 func (res *Response) Encoding(encoding string) {
 	res.encoding = encoding
 }
 
 func (res *Response) Body() (body io.Reader) {
+	defer res.res.Body.Close()
 	if res.encoding == "gbk" {
 		dec := mahonia.NewDecoder("gbk")
 		body = dec.NewReader(res.res.Body)
