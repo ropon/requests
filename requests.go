@@ -1,22 +1,28 @@
+/*
+Author:Ropon
+Date:  2020-12-17
+*/
 package requests
 
 import (
 	"compress/gzip"
 	"compress/zlib"
 	"crypto/tls"
-	"github.com/axgle/mahonia"
-	jsoniter "github.com/json-iterator/go"
+	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"reflect"
 	"strings"
 	"sync"
+	"time"
 )
 
 //自定义UA
-var ua = "Go-http-Ropon/1.2"
+var ua = "Go-http-CodoonOps/1.2"
 
 //请求相关
 type Request struct {
@@ -30,15 +36,19 @@ type Request struct {
 
 //响应相关
 type Response struct {
-	res      *http.Response
-	encoding string
-	content  []byte
-	text     string
+	res     *http.Response
+	content []byte
+	text    string
 }
 
 //构造方法
-func Requests(igTls bool) *Request {
+func New(options ...bool) *Request {
+	var igTls bool
+	if len(options) > 0 {
+		igTls = options[0]
+	}
 	req := new(Request)
+
 	if igTls {
 		//忽略证书校验
 		req.client = &http.Client{
@@ -52,24 +62,39 @@ func Requests(igTls bool) *Request {
 	req.httpReq = &http.Request{
 		Header: make(http.Header),
 	}
+	req.mutex = &sync.RWMutex{}
 	req.httpReq.Header.Add("User-Agent", ua)
-	//默认urlencoded编码
-	req.httpReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	jar, _ := cookiejar.New(nil)
-	req.client.Jar = jar
-	req.mutex = new(sync.RWMutex)
+	req.EnableCookie(true)
+	req.SetTimeout(time.Second * 5)
 	return req
 }
 
+//默认req
+var defaultReq = New()
+
 //转urlencoded编码
-func convertUrl(data ...map[string]string) url.Values {
+func convertUrl(data ...map[string]interface{}) url.Values {
 	urls := url.Values{}
 	for _, d := range data {
 		for key, value := range d {
-			urls.Add(key, value)
+			urls.Add(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return urls
+}
+
+//设置超时时间
+func (req *Request) SetTimeout(n time.Duration) {
+	req.client.Timeout = n
+}
+
+func (req *Request) EnableCookie(enable bool) {
+	if enable {
+		jar, _ := cookiejar.New(nil)
+		req.client.Jar = jar
+	} else {
+		req.client.Jar = nil
+	}
 }
 
 //请求头
@@ -92,16 +117,24 @@ func (req *Request) Cookie() {
 }
 
 //get方法
-func (req *Request) Get(urlStr string, params map[string]string) (resp *Response, err error) {
+func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, err error) {
 	rep, _ := http.NewRequest("GET", urlStr, nil)
-	if params != nil {
-		sURL, err := url.Parse(urlStr)
-		if err != nil {
-			return nil, err
+	var paramsData string
+	if len(options) > 0 {
+		data := options[0]
+		switch data.(type) {
+		case map[string]interface{}:
+			paramsData = convertUrl(data.(map[string]interface{})).Encode()
+		case string:
+			paramsData = data.(string)
 		}
-		sURL.RawQuery = convertUrl(params).Encode()
-		rep.URL = sURL
 	}
+	sURL, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+	sURL.RawQuery = paramsData
+	rep.URL = sURL
 	rep.Header = req.httpReq.Header
 	req.httpReq = rep
 	resp = &Response{}
@@ -110,18 +143,22 @@ func (req *Request) Get(urlStr string, params map[string]string) (resp *Response
 	return resp, err
 }
 
-func (req *Request) BaseReq(Method, urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
-	postData := convertUrl(data).Encode()
-	//传入json数据
+func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp *Response, err error) {
+	var postData string
 	if len(options) > 0 {
-		postData = options[0]
+		data := options[0]
+		switch data.(type) {
+		case map[string]interface{}:
+			postData = convertUrl(data.(map[string]interface{})).Encode()
+			req.httpReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		case string:
+			postData = data.(string)
+			req.httpReq.Header.Set("Content-Type", "application/json")
+		}
 	}
 	rep, _ := http.NewRequest(Method, urlStr, strings.NewReader(postData))
 	rep.Header = req.httpReq.Header
 	req.httpReq = rep
-	if len(options) > 0 {
-		req.httpReq.Header.Set("Content-Type", "application/json")
-	}
 	resp = &Response{}
 	res, err := req.client.Do(rep)
 	resp.res = res
@@ -129,33 +166,23 @@ func (req *Request) BaseReq(Method, urlStr string, data map[string]string, optio
 }
 
 //post方法
-func (req *Request) Post(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
-	return req.BaseReq("POST", urlStr, data, options...)
+func (req *Request) Post(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return req.BaseReq("POST", urlStr, options...)
 }
 
 //put方法
-func (req *Request) Put(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
-	return req.BaseReq("PUT", urlStr, data, options...)
+func (req *Request) Put(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return req.BaseReq("PUT", urlStr, options...)
 }
 
 //delete方法
-func (req *Request) Delete(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
-	return req.BaseReq("DELETE", urlStr, data, options...)
-}
-
-//配置编码 默认utf8
-func (res *Response) Encoding(encoding string) {
-	res.encoding = encoding
+func (req *Request) Delete(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return req.BaseReq("DELETE", urlStr, options...)
 }
 
 func (res *Response) Body() (body io.Reader) {
 	defer res.res.Body.Close()
-	if res.encoding == "gbk" {
-		dec := mahonia.NewDecoder("gbk")
-		body = dec.NewReader(res.res.Body)
-	} else {
-		body = res.res.Body
-	}
+	body = res.res.Body
 	return
 }
 
@@ -173,10 +200,6 @@ func (res *Response) Content() (content []byte) {
 	default:
 		reader = res.res.Body
 	}
-	if res.encoding == "gbk" {
-		dec := mahonia.NewDecoder("gbk")
-		reader = dec.NewReader(res.res.Body)
-	}
 	content, _ = ioutil.ReadAll(reader)
 	res.content = content
 	return
@@ -189,12 +212,18 @@ func (res *Response) Text() (text string) {
 	return
 }
 
-//返回jsoniter.Any 通过Get()进一步获取值
-func (res *Response) Json() jsoniter.Any {
+func (res *Response) RawJson(v interface{}) error {
 	if res.content == nil {
 		res.Content()
 	}
-	return jsoniter.Get(res.content)
+	return json.Unmarshal(res.content, &v)
+}
+
+func (res *Response) Json() (Value,error) {
+	if res.content == nil {
+		res.Content()
+	}
+	return NewJson(res.content)
 }
 
 //响应头信息
@@ -205,4 +234,49 @@ func (res *Response) Header() map[string][]string {
 //响应状态码
 func (res *Response) Status() int {
 	return res.res.StatusCode
+}
+
+//响应cookie信息
+func (res *Response) Cookie() []*http.Cookie {
+	return res.res.Cookies()
+}
+
+func Get(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return defaultReq.Get(urlStr, options...)
+}
+
+func Post(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return defaultReq.Post(urlStr, options...)
+}
+
+func Put(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return defaultReq.Put(urlStr, options...)
+}
+
+func Delete(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return defaultReq.Delete(urlStr, options...)
+}
+
+//结构体指针转map，传入结构体指针
+func StructPtr2Map(obj interface{}, tagName string) map[string]interface{} {
+	tmpVal := reflect.ValueOf(obj)
+	v := tmpVal.Elem()
+	t := v.Type()
+	var data = make(map[string]interface{})
+	for i := 0; i < v.NumField(); i++ {
+		data[t.Field(i).Tag.Get(tagName)] = v.Field(i).Interface()
+	}
+	return data
+}
+
+//结构体转map，传入结构体
+func Struct2Map(obj interface{}, tagName string) map[string]interface{} {
+	t := reflect.TypeOf(obj)
+	v := reflect.ValueOf(obj)
+
+	var data = make(map[string]interface{})
+	for i := 0; i < t.NumField(); i++ {
+		data[t.Field(i).Tag.Get(tagName)] = v.Field(i).Interface()
+	}
+	return data
 }
