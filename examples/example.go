@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/Ropon/requests"
+	"github.com/ropon/requests"
 )
 
 func main() {
