@@ -1,3 +1,3 @@
-module github.com/Ropon/requests
+module "github.com/Ropon/requests"
 
 go 1.14
