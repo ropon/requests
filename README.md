@@ -5,37 +5,37 @@ Requests
 ------------
 
 ```
-go get -v github.com/Ropon/requests
+go get github.com/Ropon/requests
 ```
-
 
 使用
 -------
 
 ```go
-import (
-    "github.com/Ropon/requests"
-)
+//构建一个新对象
+req := requests.New()
+req.Get("url")
+//或者直接使用默认对象请求
+requests.Get("url")
 
-//参数igTls 是否忽略校验证书
-Req = Requests(false)
 //构建请求头
-Req.Headers = map[string]string{
+req.Headers = map[string]string{
     "User-Agent": `这里填写自定义UA信息`,
 }
-Req.Header()
+req.Header()
+
 //构建Cookie
-Req.Cookies = map[string]string{
+req.Cookies = map[string]string{
     "key": "val"
 }
-Req.Cookie()
+req.Cookie()
 ```
 
 **GET**:
 
 ```go
 //无参数Get请求
-res, err := Req.Get("https://www.ropon.top", nil)
+res, err := req.Get("https://www.ropon.top")
 //错误处理
 if err != nil {
     log.Fatal(err)
@@ -43,10 +43,11 @@ if err != nil {
 fmt.Println(res.Text())
 
 //有参数Get请求
-queryData := map[string]string{
-    "key": "val"
+queryData := map[string]interface{}{
+    "key": "val",
+    "key2": 123
 }
-res, err := Req.Get("https://www.ropon.top", queryData)
+res, err := req.Get("https://www.ropon.top", queryData)
 //错误处理
 if err != nil {
     log.Fatal(err)
@@ -58,19 +59,20 @@ fmt.Println(res.Text())
 
 ```go
 //默认urlencode编码
-postData := map[string]string{
-    "key": "val"
+postData := map[string]interface{}{
+    "key": "val",
+	"key2": 123
 }
-res, err := Req.Post("https://www.ropon.top", postData)
+res, err := req.Post("https://www.ropon.top", postData)
 //错误处理
 if err != nil {
     log.Fatal(err)
 }
 fmt.Println(res.Text())
 
-//Post请求传json
+//请求传json
 postJsonStr := `{"key": "val"}`
-res, err := Req.Post("https://www.ropon.top", nil, postJsonStr)
+res, err := req.Post("https://www.ropon.top", postJsonStr)
 //错误处理
 if err != nil {
     log.Fatal(err)
@@ -82,19 +84,45 @@ fmt.Println(res.Text())
 
 ```go
 //默认urlencode编码
-putData := map[string]string{
-    "key": "val"
+putData := map[string]interface{}{
+    "key": "val",
+	"key2": 123
 }
-res, err := Req.Put("https://www.ropon.top", putData)
+res, err := req.Put("https://www.ropon.top", putData)
 //错误处理
 if err != nil {
     log.Fatal(err)
 }
 fmt.Println(res.Text())
 
-//Post请求传json
+//请求传json
 putJsonStr := `{"key": "val"}`
-res, err := Req.Put("https://www.ropon.top", nil, putJsonStr)
+res, err := req.Put("https://www.ropon.top", putJsonStr)
+//错误处理
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(res.Text())
+```
+
+**PATCH**:
+
+```go
+//默认urlencode编码
+patchData := map[string]interface{}{
+    "key": "val",
+	"key2": 123
+}
+res, err := req.Patch("https://www.ropon.top", patchData)
+//错误处理
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Println(res.Text())
+
+//请求传json
+patchJsonStr := `{"key": "val"}`
+res, err := req.Patch("https://www.ropon.top", patchJsonStr)
 //错误处理
 if err != nil {
     log.Fatal(err)
@@ -106,19 +134,20 @@ fmt.Println(res.Text())
 
 ```go
 //默认urlencode编码
-deleteData := map[string]string{
-    "key": "val"
+deleteData := map[string]interface{}{
+    "key": "val",
+    "key2": 123
 }
-res, err := Req.Delete("https://www.ropon.top", deleteData)
+res, err := req.Delete("https://www.ropon.top", deleteData)
 //错误处理
 if err != nil {
     log.Fatal(err)
 }
 fmt.Println(res.Text())
 
-//Post请求传json
+//请求传json
 deleteJsonStr := `{"key": "val"}`
-res, err := Req.Delete("https://www.ropon.top", nil, deleteJsonStr)
+res, err := req.Delete("https://www.ropon.top", deleteJsonStr)
 //错误处理
 if err != nil {
     log.Fatal(err)
@@ -130,27 +159,28 @@ fmt.Println(res.Text())
 
 ```go
 //单独带cookie请求
-Req.Cookies["key1"] = "val1"
-res, err := Req.Get("https://www.ropon.top", nil)
+req.Cookies["key1"] = "val1"
+req.Cookie()
+res, err := req.Get("https://www.ropon.top")
 ```
 
 **Headers**:
 
 ```go
 //单独带header请求
-Req.Headers["key1"] = "val1"
-res, err := Req.Get("https://www.ropon.top", nil)
+req.Headers["key1"] = "val1"
+req.Header()
+res, err := req.Get("https://www.ropon.top")
 ```
 
 **Res**:
 
 ```go
-//默认utf8编码，若使用gbk编码
-res.Encoding("gbk")
 //获取文本信息
 res.Text()
-//获取Json，反馈jsoniter.Any
+//获取Json，反馈requests.Value
 res.Json()
+res.Json().Get("data", "svc_list").String()
 //获取响应头
 res.Header()
 //获取状态码

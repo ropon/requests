@@ -1,37 +1,46 @@
 package requests
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/Ropon/requests"
+)
 
-const UA = `这里填写自定义UA信息`
+func main() {
+	//构建一个新对象
+	//req := requests.New()
+	//req.Get("url")
+	//或者直接使用默认对象请求
+	//requests.Get("url")
 
-var Req *Request
-
-func InitReq() {
-	//初始化传入参数代表是否校验证书
-	Req = Requests(false)
-	Req.Headers = map[string]string{
-		"User-Agent": UA,
+	apiUrl := "https://ip.ropon.top"
+	data := map[string]interface{}{
+		"type": "all",
 	}
-	Req.Cookies = map[string]string{
-
+	res, err := requests.Get(apiUrl, data)
+	if err != nil {
+		return
 	}
-	Req.Header()
-	Req.Cookie()
-}
-
-func Get(urlStr string, params map[string]string) (resp *Response, err error) {
-	return Req.Get(urlStr, params)
-}
-
-func Post(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
-	return Req.Post(urlStr, data, options...)
-}
-
-func Put(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
-	return Req.Put(urlStr, data, options...)
-}
-
-func Delete(urlStr string, data map[string]string, options ...string) (resp *Response, err error) {
-	fmt.Println()
-	return Req.Delete(urlStr, data, options...)
+	//输出文本
+	//fmt.Println(res.Text())
+	//解析JSON
+	status := res.Json().Get("status").String()
+	//直接转数组
+	nameList := res.Json().Get("data").StringArray("name")
+	fmt.Println(status, nameList)
+	//循环
+	userList := res.Json().Get("data")
+	for i := 0; i < userList.Size(); i++ {
+		fmt.Println(userList.Get(i).Get("email").String())
+	}
+	//post方法
+	data = map[string]interface{}{
+		"type": "all",
+	}
+	//或json
+	data = fmt.Sprintf(`{"name": "ropon", "age": 18}`)
+	res, err = requests.Post(apiUrl, data)
+	if err != nil {
+		return
+	}
+	//res同上
 }

@@ -1,7 +1,3 @@
-/*
-Author:Ropon
-Date:  2020-12-17
-*/
 package requests
 
 import (
@@ -22,9 +18,9 @@ import (
 )
 
 //自定义UA
-var ua = "Go-http-CodoonOps/1.2"
+var ua = "Go-http-Ropon/1.2"
 
-//请求相关
+// Request 请求相关
 type Request struct {
 	client  *http.Client
 	httpReq *http.Request
@@ -34,14 +30,14 @@ type Request struct {
 	mutex   *sync.RWMutex
 }
 
-//响应相关
+// Response 响应相关
 type Response struct {
 	res     *http.Response
 	content []byte
 	text    string
 }
 
-//构造方法
+// New 构造方法
 func New(options ...bool) *Request {
 	var igTls bool
 	if len(options) > 0 {
@@ -83,7 +79,7 @@ func convertUrl(data ...map[string]interface{}) url.Values {
 	return urls
 }
 
-//设置超时时间
+// SetTimeout 设置超时时间
 func (req *Request) SetTimeout(n time.Duration) {
 	req.client.Timeout = n
 }
@@ -97,7 +93,7 @@ func (req *Request) EnableCookie(enable bool) {
 	}
 }
 
-//请求头
+// Header 请求头
 func (req *Request) Header() {
 	req.mutex.Lock()
 	defer req.mutex.Unlock()
@@ -106,7 +102,7 @@ func (req *Request) Header() {
 	}
 }
 
-//Cookie管理
+// Cookie 管理
 func (req *Request) Cookie() {
 	req.mutex.Lock()
 	defer req.mutex.Unlock()
@@ -116,7 +112,7 @@ func (req *Request) Cookie() {
 	}
 }
 
-//get方法
+// Get get方法
 func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, err error) {
 	rep, _ := http.NewRequest("GET", urlStr, nil)
 	var paramsData string
@@ -133,7 +129,9 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 	if err != nil {
 		return nil, err
 	}
-	sURL.RawQuery = paramsData
+	if paramsData != "" {
+		sURL.RawQuery = paramsData
+	}
 	rep.URL = sURL
 	rep.Header = req.httpReq.Header
 	req.httpReq = rep
@@ -165,19 +163,29 @@ func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp
 	return resp, err
 }
 
-//post方法
+// Post post方法
 func (req *Request) Post(urlStr string, options ...interface{}) (resp *Response, err error) {
 	return req.BaseReq("POST", urlStr, options...)
 }
 
-//put方法
+// Put put方法
 func (req *Request) Put(urlStr string, options ...interface{}) (resp *Response, err error) {
 	return req.BaseReq("PUT", urlStr, options...)
 }
 
-//delete方法
+// Patch put方法
+func (req *Request) Patch(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return req.BaseReq("PATCH", urlStr, options...)
+}
+
+// Delete delete方法
 func (req *Request) Delete(urlStr string, options ...interface{}) (resp *Response, err error) {
 	return req.BaseReq("DELETE", urlStr, options...)
+}
+
+func (res *Response) SetRes(rawRes *http.Response) {
+	res.res = rawRes
+	return
 }
 
 func (res *Response) Body() (body io.Reader) {
@@ -205,7 +213,7 @@ func (res *Response) Content() (content []byte) {
 	return
 }
 
-//返回文本信息
+// Text 返回文本信息
 func (res *Response) Text() (text string) {
 	text = string(res.Content())
 	res.text = text
@@ -219,24 +227,28 @@ func (res *Response) RawJson(v interface{}) error {
 	return json.Unmarshal(res.content, &v)
 }
 
-func (res *Response) Json() (Value,error) {
+func (res *Response) Json() Value {
 	if res.content == nil {
 		res.Content()
 	}
-	return NewJson(res.content)
+	v, err := NewJson(res.content)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	return v
 }
 
-//响应头信息
+// Header 响应头信息
 func (res *Response) Header() map[string][]string {
 	return res.res.Header
 }
 
-//响应状态码
+// Status 响应状态码
 func (res *Response) Status() int {
 	return res.res.StatusCode
 }
 
-//响应cookie信息
+// Cookie 响应信息
 func (res *Response) Cookie() []*http.Cookie {
 	return res.res.Cookies()
 }
@@ -253,11 +265,15 @@ func Put(urlStr string, options ...interface{}) (resp *Response, err error) {
 	return defaultReq.Put(urlStr, options...)
 }
 
+func Patch(urlStr string, options ...interface{}) (resp *Response, err error) {
+	return defaultReq.Patch(urlStr, options...)
+}
+
 func Delete(urlStr string, options ...interface{}) (resp *Response, err error) {
 	return defaultReq.Delete(urlStr, options...)
 }
 
-//结构体指针转map，传入结构体指针
+// StructPtr2Map 结构体指针转map，传入结构体指针
 func StructPtr2Map(obj interface{}, tagName string) map[string]interface{} {
 	tmpVal := reflect.ValueOf(obj)
 	v := tmpVal.Elem()
@@ -269,7 +285,7 @@ func StructPtr2Map(obj interface{}, tagName string) map[string]interface{} {
 	return data
 }
 
-//结构体转map，传入结构体
+// Struct2Map 结构体转map，传入结构体
 func Struct2Map(obj interface{}, tagName string) map[string]interface{} {
 	t := reflect.TypeOf(obj)
 	v := reflect.ValueOf(obj)

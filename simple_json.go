@@ -1,7 +1,3 @@
-/*
-Author:Ropon
-Date:  2021-01-06
-*/
 package requests
 
 import (
@@ -124,15 +120,12 @@ func (v Value) Map() map[string]interface{} {
 }
 
 func (v Value) StringArray(path ...interface{}) []string {
-	var tmpArray []string
+	tmpArray := make([]string, 0, v.Size())
 	if v.Data == nil || !v.Exists {
 		return tmpArray
 	}
 	if v.Size() > 0 {
 		for i := 0; i < v.Size(); i++ {
-			if v.Get(i).Get(path...).String() == "" {
-				break
-			}
 			tmpArray = append(tmpArray, v.Get(i).Get(path...).String())
 		}
 	}
