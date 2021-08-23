@@ -26,7 +26,7 @@ req.Header()
 
 //构建Cookie
 req.Cookies = map[string]string{
-    "key": "val"
+    "key": "val",
 }
 req.Cookie()
 ```
@@ -45,7 +45,7 @@ fmt.Println(res.Text())
 //有参数Get请求
 queryData := map[string]interface{}{
     "key": "val",
-    "key2": 123
+    "key2": 123,
 }
 res, err := req.Get("https://www.ropon.top", queryData)
 //错误处理
@@ -61,7 +61,7 @@ fmt.Println(res.Text())
 //默认urlencode编码
 postData := map[string]interface{}{
     "key": "val",
-	"key2": 123
+	"key2": 123,
 }
 res, err := req.Post("https://www.ropon.top", postData)
 //错误处理
@@ -86,7 +86,7 @@ fmt.Println(res.Text())
 //默认urlencode编码
 putData := map[string]interface{}{
     "key": "val",
-	"key2": 123
+	"key2": 123,
 }
 res, err := req.Put("https://www.ropon.top", putData)
 //错误处理
@@ -111,7 +111,7 @@ fmt.Println(res.Text())
 //默认urlencode编码
 patchData := map[string]interface{}{
     "key": "val",
-	"key2": 123
+	"key2": 123,
 }
 res, err := req.Patch("https://www.ropon.top", patchData)
 //错误处理
@@ -136,7 +136,7 @@ fmt.Println(res.Text())
 //默认urlencode编码
 deleteData := map[string]interface{}{
     "key": "val",
-    "key2": 123
+    "key2": 123,
 }
 res, err := req.Delete("https://www.ropon.top", deleteData)
 //错误处理

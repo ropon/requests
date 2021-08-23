@@ -13,32 +13,37 @@ func main() {
 	//requests.Get("url")
 
 	apiUrl := "https://ip.ropon.top"
-	data := map[string]interface{}{
-		"type": "all",
+	queryData := map[string]interface{}{
+		"type": "json",
 	}
-	res, err := requests.Get(apiUrl, data)
+	res, err := requests.Get(apiUrl, queryData)
 	if err != nil {
+		fmt.Println(err.Error())
 		return
 	}
 	//输出文本
-	//fmt.Println(res.Text())
+	fmt.Println("text:", res.Text())
 	//解析JSON
-	status := res.Json().Get("status").String()
+	code := res.Json().Get("code").String()
 	//直接转数组
-	nameList := res.Json().Get("data").StringArray("name")
-	fmt.Println(status, nameList)
+	zone := res.Json().Get("data", "zone").String()
+	fmt.Println(code, zone)
 	//循环
 	userList := res.Json().Get("data")
 	for i := 0; i < userList.Size(); i++ {
 		fmt.Println(userList.Get(i).Get("email").String())
 	}
 	//post方法
-	data = map[string]interface{}{
-		"type": "all",
+	postData := map[string]interface{}{
+		"type": "json",
+	}
+	res, err = requests.Post(apiUrl, postData)
+	if err != nil {
+		return
 	}
 	//或json
-	data = fmt.Sprintf(`{"name": "%s", "age": %d}`, "ropon", 18)
-	res, err = requests.Post(apiUrl, data)
+	jsonData := fmt.Sprintf(`{"name": "%s", "age": %d}`, "ropon", 18)
+	res, err = requests.Post(apiUrl, jsonData)
 	if err != nil {
 		return
 	}
