@@ -5,7 +5,7 @@ Requests
 ------------
 
 ```
-go get github.com/Ropon/requests
+go get -u github.com/Ropon/requests
 ```
 
 使用
