@@ -130,7 +130,7 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 		return nil, err
 	}
 	if paramsData != "" {
-		sURL.RawQuery = paramsData
+		sURL.RawQuery = fmt.Sprintf(`%s&%s`, sURL.RawQuery, paramsData)
 	}
 	rep.URL = sURL
 	rep.Header = req.httpReq.Header
