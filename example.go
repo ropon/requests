@@ -2,7 +2,6 @@ package requests
 
 import (
 	"fmt"
-	"github.com/Ropon/requests"
 )
 
 func main() {
@@ -16,7 +15,7 @@ func main() {
 	data := map[string]interface{}{
 		"type": "all",
 	}
-	res, err := requests.Get(apiUrl, data)
+	res, err := Get(apiUrl, data)
 	if err != nil {
 		return
 	}
@@ -37,8 +36,8 @@ func main() {
 		"type": "all",
 	}
 	//或json
-	data = fmt.Sprintf(`{"name": "ropon", "age": 18}`)
-	res, err = requests.Post(apiUrl, data)
+	data = fmt.Sprintf(`{"name": "ropon", "age": %d}`, 18)
+	res, err = Post(apiUrl, data)
 	if err != nil {
 		return
 	}
