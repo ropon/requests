@@ -178,7 +178,7 @@ res, err := req.Get("https://www.ropon.top")
 ```go
 //获取文本信息
 res.Text()
-//获取Json，反馈requests.Value
+//获取Json，f返回requests.Value
 res.Json()
 res.Json().Get("data", "svc_list").String()
 //获取响应头
