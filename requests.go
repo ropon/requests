@@ -18,7 +18,7 @@ import (
 )
 
 //自定义UA
-var ua = "Go-http-Ropon/1.2"
+var ua = "Go-http-Ropon/1.3"
 
 // Request 请求相关
 type Request struct {
@@ -93,6 +93,11 @@ func (req *Request) EnableCookie(enable bool) {
 	}
 }
 
+//设置基本认证
+func (req *Request) SetBasicAuth(username, password string) {
+	req.httpReq.SetBasicAuth(username, password)
+}
+
 // Header 请求头
 func (req *Request) Header() {
 	req.mutex.Lock()
@@ -114,8 +119,10 @@ func (req *Request) Cookie() {
 
 // Get get方法
 func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, err error) {
-	rep, _ := http.NewRequest("GET", urlStr, nil)
+	doRep, _ := http.NewRequest("GET", urlStr, nil)
 	var paramsData string
+	req.mutex.Lock()
+	defer req.mutex.Unlock()
 	if len(options) > 0 {
 		data := options[0]
 		switch data.(type) {
@@ -132,17 +139,19 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 	if paramsData != "" {
 		sURL.RawQuery = fmt.Sprintf(`%s&%s`, sURL.RawQuery, paramsData)
 	}
-	rep.URL = sURL
-	rep.Header = req.httpReq.Header
-	req.httpReq = rep
+	doRep.URL = sURL
+	doRep.Header = req.httpReq.Header
+	req.httpReq = doRep
 	resp = &Response{}
-	res, err := req.client.Do(rep)
+	res, err := req.client.Do(doRep)
 	resp.res = res
 	return resp, err
 }
 
 func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp *Response, err error) {
 	var postData string
+	req.mutex.Lock()
+	defer req.mutex.Unlock()
 	if len(options) > 0 {
 		data := options[0]
 		switch data.(type) {
@@ -188,8 +197,7 @@ func (res *Response) SetRes(rawRes *http.Response) {
 	return
 }
 
-func (res *Response) Body() (body io.Reader) {
-	defer res.res.Body.Close()
+func (res *Response) Body() (body io.ReadCloser) {
 	body = res.res.Body
 	return
 }
@@ -198,16 +206,22 @@ func (res *Response) Content() (content []byte) {
 	if res.content != nil {
 		return res.content
 	}
-	var reader io.Reader
+	var reader io.ReadCloser
 	//判断压缩编码
 	switch res.res.Header.Get("Content-Encoding") {
 	case "gzip":
-		reader, _ = gzip.NewReader(res.res.Body)
+		reader, _ = gzip.NewReader(res.Body())
 	case "deflate":
-		reader, _ = zlib.NewReader(res.res.Body)
+		reader, _ = zlib.NewReader(res.Body())
 	default:
-		reader = res.res.Body
+		reader = res.Body()
 	}
+	defer func(reader io.ReadCloser) {
+		err := reader.Close()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+	}(reader)
 	content, _ = ioutil.ReadAll(reader)
 	res.content = content
 	return
@@ -221,17 +235,11 @@ func (res *Response) Text() (text string) {
 }
 
 func (res *Response) RawJson(v interface{}) error {
-	if res.content == nil {
-		res.Content()
-	}
-	return json.Unmarshal(res.content, &v)
+	return json.Unmarshal(res.Content(), &v)
 }
 
 func (res *Response) Json() Value {
-	if res.content == nil {
-		res.Content()
-	}
-	v, err := NewJson(res.content)
+	v, err := NewJson(res.Content())
 	if err != nil {
 		fmt.Println(err.Error())
 	}
