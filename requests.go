@@ -18,7 +18,7 @@ import (
 )
 
 //自定义UA
-var ua = "Go-http-Ropon/1.3"
+var ua = "Go-http-Ropon/2.1"
 
 // Request 请求相关
 type Request struct {
