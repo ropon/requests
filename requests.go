@@ -117,9 +117,18 @@ func (req *Request) Cookie() {
 	}
 }
 
+func (req *Request) Do() (*Response, error) {
+	res, err := req.client.Do(req.httpReq)
+	if err != nil {
+		return nil, err
+	}
+	resp := new(Response)
+	resp.res = res
+	return resp, nil
+}
+
 // Get get方法
 func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, err error) {
-	doRep, _ := http.NewRequest("GET", urlStr, nil)
 	var paramsData string
 	req.mutex.Lock()
 	defer req.mutex.Unlock()
@@ -139,13 +148,11 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 	if paramsData != "" {
 		sURL.RawQuery = fmt.Sprintf(`%s&%s`, sURL.RawQuery, paramsData)
 	}
+	doRep, _ := http.NewRequest("GET", urlStr, nil)
 	doRep.URL = sURL
 	doRep.Header = req.httpReq.Header
 	req.httpReq = doRep
-	resp = &Response{}
-	res, err := req.client.Do(doRep)
-	resp.res = res
-	return resp, err
+	return req.Do()
 }
 
 func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp *Response, err error) {
@@ -166,10 +173,7 @@ func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp
 	rep, _ := http.NewRequest(Method, urlStr, strings.NewReader(postData))
 	rep.Header = req.httpReq.Header
 	req.httpReq = rep
-	resp = &Response{}
-	res, err := req.client.Do(rep)
-	resp.res = res
-	return resp, err
+	return req.Do()
 }
 
 // Post post方法
