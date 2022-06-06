@@ -7,6 +7,8 @@ func TestGet(t *testing.T) {
 	res, err := Get("https://httpbin.org/get?a=1&b=2", map[string]interface{}{
 		"key1": "val1",
 		"key2": 11,
+		"key3": []string{"val31", "val32"},
+		"key4": []int{41, 42},
 	})
 	if err != nil {
 		t.Error(err.Error())
@@ -19,6 +21,8 @@ func TestPost(t *testing.T) {
 	res, err := Post("https://httpbin.org/post?arg1=123&arg2=456", map[string]interface{}{
 		"key1": "val1",
 		"key2": 22,
+		"key3": []string{"val31", "val32"},
+		"key4": []int{41, 42},
 	})
 	if err != nil {
 		t.Error(err.Error())

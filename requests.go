@@ -73,7 +73,17 @@ func convertUrl(data ...map[string]interface{}) url.Values {
 	urls := url.Values{}
 	for _, d := range data {
 		for key, value := range d {
-			urls.Add(key, fmt.Sprintf("%v", value))
+			if v, ok := value.([]string); ok {
+				for _, vv := range v {
+					urls.Add(key, vv)
+				}
+			} else if v2, ok2 := value.([]int); ok2 {
+				for _, vv2 := range v2 {
+					urls.Add(key, fmt.Sprintf("%v", vv2))
+				}
+			} else {
+				urls.Add(key, fmt.Sprintf("%v", value))
+			}
 		}
 	}
 	return urls
