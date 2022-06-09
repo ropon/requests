@@ -34,13 +34,19 @@ func (v Value) Get(path ...interface{}) Value {
 		}
 		switch v.Data.(type) {
 		case map[string]interface{}:
-			v.Data = v.Data.(map[string]interface{})[key.(string)]
+			switch key.(type) {
+			case string:
+				v.Data = v.Data.(map[string]interface{})[key.(string)]
+			}
 		case []interface{}:
 			varray := v.Data.([]interface{})
-			if key.(int) < len(varray) {
-				v.Data = varray[key.(int)]
-			} else {
-				v.Data = nil
+			switch key.(type) {
+			case int:
+				if key.(int) < len(varray) {
+					v.Data = varray[key.(int)]
+				} else {
+					v.Data = nil
+				}
 			}
 		}
 	}
