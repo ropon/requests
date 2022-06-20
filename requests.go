@@ -10,7 +10,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httputil"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"sync"
@@ -24,10 +26,11 @@ var ua = "Go-http-Ropon/2.1"
 type Request struct {
 	client  *http.Client
 	httpReq *http.Request
-	Headers map[string]string
-	Cookies map[string]string
 	Params  url.Values
 	mutex   *sync.RWMutex
+	Headers map[string]string
+	Cookies map[string]string
+	Debug   bool
 }
 
 // Response 响应相关
@@ -108,6 +111,33 @@ func (req *Request) SetBasicAuth(username, password string) {
 	req.httpReq.SetBasicAuth(username, password)
 }
 
+//设置Proxy
+func (req *Request) SetProxy(proxyUrl string) {
+	urlProxy, _ := url.Parse(proxyUrl)
+	req.client.Transport = &http.Transport{
+		Proxy:           http.ProxyURL(urlProxy),
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+}
+
+func (req *Request) RequestDebug() {
+	if !req.Debug {
+		return
+	}
+	fmt.Println("===========Go RequestDebug ============")
+	message, err := httputil.DumpRequestOut(req.httpReq, false)
+	if err != nil {
+		return
+	}
+	fmt.Println(string(message))
+	if len(req.client.Jar.Cookies(req.httpReq.URL)) > 0 {
+		fmt.Println("Cookies:")
+		for _, cookie := range req.client.Jar.Cookies(req.httpReq.URL) {
+			fmt.Println(cookie)
+		}
+	}
+}
+
 // Header 请求头
 func (req *Request) Header() {
 	req.mutex.Lock()
@@ -162,6 +192,7 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 	doRep.URL = sURL
 	doRep.Header = req.httpReq.Header
 	req.httpReq = doRep
+	req.RequestDebug()
 	return req.Do()
 }
 
@@ -183,6 +214,7 @@ func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp
 	rep, _ := http.NewRequest(Method, urlStr, strings.NewReader(postData))
 	rep.Header = req.httpReq.Header
 	req.httpReq = rep
+	req.RequestDebug()
 	return req.Do()
 }
 
@@ -258,6 +290,17 @@ func (res *Response) Json() Value {
 		fmt.Println(err.Error())
 	}
 	return v
+}
+
+func (res *Response) SaveFile(fileName string) error {
+	f, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write(res.Content())
+	f.Sync()
+	return err
 }
 
 // Header 响应头信息
