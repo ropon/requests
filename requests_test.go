@@ -54,10 +54,18 @@ func TestProxy(t *testing.T) {
 	t.Log(res.Text())
 }
 
-func TestDownLoad(t *testing.T)  {
+func TestDownLoad(t *testing.T) {
 	res, err := req.Get("https://studygolang.com/dl/golang/go1.18.3.src.tar.gz")
 	if err != nil {
 		t.Error(err.Error())
 	}
 	t.Log(res.SaveFile("./go.tar.gz"))
+}
+
+func TestHeader(t *testing.T) {
+	res, err := req.Get("https://httpbin.org/get")
+	if err != nil {
+		t.Error(err.Error())
+	}
+	t.Log(res.Header().Get("Date"))
 }
