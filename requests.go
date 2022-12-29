@@ -304,7 +304,7 @@ func (res *Response) SaveFile(fileName string) error {
 }
 
 // Header 响应头信息
-func (res *Response) Header() map[string][]string {
+func (res *Response) Header() http.Header {
 	return res.res.Header
 }
 
