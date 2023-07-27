@@ -188,10 +188,9 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 	if paramsData != "" {
 		sURL.RawQuery = fmt.Sprintf(`%s&%s`, sURL.RawQuery, paramsData)
 	}
-	doRep, _ := http.NewRequest("GET", urlStr, nil)
-	doRep.URL = sURL
-	doRep.Header = req.httpReq.Header
-	req.httpReq = doRep
+
+	req.httpReq.Method = "GET"
+	req.httpReq.URL = sURL
 	req.RequestDebug()
 	return req.Do()
 }
@@ -211,11 +210,26 @@ func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp
 			req.httpReq.Header.Set("Content-Type", "application/json")
 		}
 	}
-	rep, _ := http.NewRequest(Method, urlStr, strings.NewReader(postData))
-	rep.Header = req.httpReq.Header
-	req.httpReq = rep
+	sURL, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+	req.httpReq.Method = Method
+	req.httpReq.URL = sURL
+	req.httpReq.Body = ioutil.NopCloser(strings.NewReader(postData))
+	req.httpReq.ContentLength = int64(len(postData))
+
 	req.RequestDebug()
-	return req.Do()
+	res, err := req.Do()
+
+	req.httpReq.Body = nil
+	req.httpReq.GetBody = nil
+	req.httpReq.ContentLength = 0
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	return res, nil
 }
 
 // Post post方法
