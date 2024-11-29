@@ -31,6 +31,7 @@ type Request struct {
 	Headers map[string]string
 	Cookies map[string]string
 	Debug   bool
+	BaseUrl *url.URL
 }
 
 // Response 响应相关
@@ -120,6 +121,19 @@ func (req *Request) SetProxy(proxyUrl string) {
 	}
 }
 
+func (req *Request) SetBaseUrl(baseUrl string) error {
+	baseURL, err := url.Parse(baseUrl)
+	if err != nil {
+		return err
+	}
+	req.BaseUrl = baseURL
+	return nil
+}
+
+func (req *Request) SetHeader(key, val string) {
+	req.httpReq.Header.Set(key, val)
+}
+
 func (req *Request) RequestDebug() {
 	if !req.Debug {
 		return
@@ -185,6 +199,9 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 	if err != nil {
 		return nil, err
 	}
+	if req.BaseUrl != nil {
+		sURL = req.BaseUrl.ResolveReference(sURL)
+	}
 	if paramsData != "" {
 		if sURL.RawQuery != "" {
 			sURL.RawQuery = fmt.Sprintf(`%s&%s`, sURL.RawQuery, paramsData)
@@ -216,6 +233,9 @@ func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp
 	sURL, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, err
+	}
+	if req.BaseUrl != nil {
+		sURL = req.BaseUrl.ResolveReference(sURL)
 	}
 	req.httpReq.Method = Method
 	req.httpReq.URL = sURL

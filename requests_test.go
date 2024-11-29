@@ -4,6 +4,24 @@ import "testing"
 
 var req = New()
 
+func TestWithBaseUrlGet(t *testing.T) {
+	//req.Debug = true
+	req.SetProxy("http://127.0.0.1:7892")
+	req.SetBaseUrl("https://httpbin.org")
+	//res, err := Get("https://httpbin.org/get?a=1&b=2","c=3&d=4")
+	res, err := req.Get("/get?name=ropon", map[string]interface{}{
+		"key1": "val1",
+		"key2": 11,
+		"key3": []string{"val31", "val32"},
+		"key4": []int{41, 42},
+	})
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	t.Log(res.Text())
+}
+
 func TestGet(t *testing.T) {
 	//req.Debug = true
 	req.SetProxy("http://127.0.0.1:7892")
@@ -11,6 +29,23 @@ func TestGet(t *testing.T) {
 	res, err := req.Get("https://httpbin.org/get", map[string]interface{}{
 		"key1": "val1",
 		"key2": 11,
+		"key3": []string{"val31", "val32"},
+		"key4": []int{41, 42},
+	})
+	if err != nil {
+		t.Error(err.Error())
+		return
+	}
+	t.Log(res.Text())
+}
+
+func TestWithBaseUrlPost(t *testing.T) {
+	req.SetProxy("http://127.0.0.1:7892")
+	req.SetBaseUrl("https://httpbin.org")
+	//res, err := Post("https://httpbin.org/post",`{"name":"ropon","age":18}`)
+	res, err := req.Post("/post?arg1=123&arg2=456", map[string]interface{}{
+		"key1": "val1",
+		"key2": 22,
 		"key3": []string{"val31", "val32"},
 		"key4": []int{41, 42},
 	})
