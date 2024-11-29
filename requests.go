@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-//自定义UA
+// 自定义UA
 var ua = "Go-http-Ropon/2.1"
 
 // Request 请求相关
@@ -68,10 +68,10 @@ func New(options ...bool) *Request {
 	return req
 }
 
-//默认req
+// 默认req
 var defaultReq = New()
 
-//转urlencoded编码
+// 转urlencoded编码
 func convertUrl(data ...map[string]interface{}) url.Values {
 	urls := url.Values{}
 	for _, d := range data {
@@ -106,12 +106,12 @@ func (req *Request) EnableCookie(enable bool) {
 	}
 }
 
-//设置基本认证
+// 设置基本认证
 func (req *Request) SetBasicAuth(username, password string) {
 	req.httpReq.SetBasicAuth(username, password)
 }
 
-//设置Proxy
+// 设置Proxy
 func (req *Request) SetProxy(proxyUrl string) {
 	urlProxy, _ := url.Parse(proxyUrl)
 	req.client.Transport = &http.Transport{
@@ -186,9 +186,12 @@ func (req *Request) Get(urlStr string, options ...interface{}) (resp *Response, 
 		return nil, err
 	}
 	if paramsData != "" {
-		sURL.RawQuery = fmt.Sprintf(`%s&%s`, sURL.RawQuery, paramsData)
+		if sURL.RawQuery != "" {
+			sURL.RawQuery = fmt.Sprintf(`%s&%s`, sURL.RawQuery, paramsData)
+		} else {
+			sURL.RawQuery = paramsData
+		}
 	}
-
 	req.httpReq.Method = "GET"
 	req.httpReq.URL = sURL
 	req.RequestDebug()
@@ -226,7 +229,6 @@ func (req *Request) BaseReq(Method, urlStr string, options ...interface{}) (resp
 	req.httpReq.GetBody = nil
 	req.httpReq.ContentLength = 0
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 	return res, nil
