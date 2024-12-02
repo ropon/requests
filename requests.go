@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"bytes"
 	"compress/gzip"
 	"compress/zlib"
 	"crypto/tls"
@@ -139,17 +140,68 @@ func (req *Request) RequestDebug() {
 		return
 	}
 	fmt.Println("===========Go RequestDebug ============")
-	message, err := httputil.DumpRequestOut(req.httpReq, false)
-	if err != nil {
-		return
+
+	// 输出基本请求信息
+	fmt.Printf("Method: %s\n", req.httpReq.Method)
+	fmt.Printf("URL: %s\n", req.httpReq.URL)
+
+	// 输出请求头
+	fmt.Println("Headers:")
+	for key, values := range req.httpReq.Header {
+		for _, value := range values {
+			fmt.Printf("%s: %s\n", key, value)
+		}
 	}
-	fmt.Println(string(message))
+
+	// 输出请求参数
+	fmt.Println("Request Parameters:")
+
+	// 处理 URL 查询参数
+	queryParams := req.httpReq.URL.Query()
+	if len(queryParams) > 0 {
+		fmt.Println("Query Parameters:")
+		for key, values := range queryParams {
+			for _, value := range values {
+				fmt.Printf("%s: %s\n", key, value)
+			}
+		}
+	}
+
+	// 处理 body 数据
+	contentType := req.httpReq.Header.Get("Content-Type")
+
+	// 使用 httputil.DumpRequestOut 来安全地获取完整请求，包括 body
+	dumpedReq, err := httputil.DumpRequestOut(req.httpReq, true)
+	if err == nil {
+		parts := bytes.SplitN(dumpedReq, []byte("\r\n\r\n"), 2)
+		if len(parts) == 2 {
+			body := parts[1]
+			if strings.Contains(contentType, "application/json") {
+				fmt.Println("JSON Body:")
+				fmt.Println(string(body))
+			} else if strings.Contains(contentType, "application/x-www-form-urlencoded") {
+				fmt.Println("Form Data:")
+				formData, _ := url.ParseQuery(string(body))
+				for key, values := range formData {
+					for _, value := range values {
+						fmt.Printf("%s: %s\n", key, value)
+					}
+				}
+			} else {
+				fmt.Println("Body:")
+				fmt.Println(string(body))
+			}
+		}
+	}
+	// 输出 cookies
 	if len(req.client.Jar.Cookies(req.httpReq.URL)) > 0 {
-		fmt.Println("Cookies:")
+		fmt.Println("\nCookies:")
 		for _, cookie := range req.client.Jar.Cookies(req.httpReq.URL) {
 			fmt.Println(cookie)
 		}
 	}
+
+	fmt.Println("===========End RequestDebug============")
 }
 
 // Header 请求头

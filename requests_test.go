@@ -42,6 +42,7 @@ func TestGet(t *testing.T) {
 func TestWithBaseUrlPost(t *testing.T) {
 	req.SetProxy("http://127.0.0.1:7892")
 	req.SetBaseUrl("https://httpbin.org")
+	req.Debug = true
 	//res, err := Post("https://httpbin.org/post",`{"name":"ropon","age":18}`)
 	res, err := req.Post("/post?arg1=123&arg2=456", map[string]interface{}{
 		"key1": "val1",
