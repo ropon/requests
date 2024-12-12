@@ -4,8 +4,9 @@ import "testing"
 
 var req = New()
 
+// go test -v -run TestWithBaseUrlGet
 func TestWithBaseUrlGet(t *testing.T) {
-	//req.Debug = true
+	req.Debug = true
 	req.SetProxy("http://127.0.0.1:7892")
 	req.SetBaseUrl("https://httpbin.org")
 	//res, err := Get("https://httpbin.org/get?a=1&b=2","c=3&d=4")

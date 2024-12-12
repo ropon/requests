@@ -230,6 +230,14 @@ func (req *Request) Do() (*Response, error) {
 	}
 	resp := new(Response)
 	resp.res = res
+	if req.Debug {
+		//httputil.DumpResponse
+		if dump, err := httputil.DumpResponse(res, true); err == nil {
+			fmt.Println("===========Go ResponseDebug ===========")
+			fmt.Printf("\n%s\n", dump)
+			fmt.Println("===========End ResponseDebug===========")
+		}
+	}
 	return resp, nil
 }
 
